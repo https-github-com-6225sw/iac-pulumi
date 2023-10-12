@@ -43,14 +43,13 @@ public class App {
                 .state("available")
                 .build());
         var ids = available.applyValue(getAvailabilityZonesResult -> getAvailabilityZonesResult.zoneIds());
-        final Output<List<String>> listOutput = ids.applyValue(values -> {
-            for (String str: values) {
-                var primary = new Subnet("primary", SubnetArgs.builder()
-                        .availabilityZone(str)
-                        .build());
-            }
-            return null;
-        });
+//        int[] count = new int[0];
+//        final Output<List<String>> listOutput = ids.applyValue(values -> {
+//            for (String str: values) {
+//                count[0]++;
+//            }
+//            return null;
+//        });
 
 
        int valueForPrefix = 0;
@@ -121,23 +120,26 @@ public class App {
 
         }
 
-//        //create private subnets
-//        int n = 0;
-//        for (int i = (int) k; i < k * 2; i++) {
-//            Subnet privateSubnet = new Subnet(privateSubnetName + n, SubnetArgs.builder()
-//                    .vpcId(myVpc.id())
-//                    .cidrBlock(avaliableAdress[i].toString())
-//                    .tags(Map.of("Name", privateSubnetName + n))
-//                    .availabilityZone(availableArr[n])
-//                    .build());
-//
-//            RouteTableAssociation privateSubnetRouteTableAssociation = new RouteTableAssociation
-//                    (privateSubnetAssoName + n, RouteTableAssociationArgs.builder()
-//                            .subnetId(privateSubnet.id())
-//                            .routeTableId(privateRouteTable.id())
-//                            .build());
-//            n++;
-//        }
+
+        //create private subnets
+        int n = 0;
+        for (int i = (int) k; i < k * 2; i++) {
+            int finalN = n;
+            Subnet privateSubnet = new Subnet(privateSubnetName + n, SubnetArgs.builder()
+                    .vpcId(myVpc.id())
+                    .cidrBlock(avaliableAdress[i].toString())
+                    .tags(Map.of("Name", privateSubnetName + n))
+                    .availabilityZone(available.applyValue(getAvailabilityZonesResult -> getAvailabilityZonesResult.names().get(finalN)))
+                    .build());
+
+            RouteTableAssociation privateSubnetRouteTableAssociation = new RouteTableAssociation
+                    (privateSubnetAssoName + n, RouteTableAssociationArgs.builder()
+                            .subnetId(privateSubnet.id())
+                            .routeTableId(privateRouteTable.id())
+                            .build());
+
+            n++;
+        }
 
         //add public cidr destination and gateway
         Route publicRoute = new Route(config.require("destinationCidrBlock"), RouteArgs.builder()
