@@ -1,0 +1,16 @@
+config:
+  name: dev
+  aws:region: us-east-1
+  vpcCidrBlock: 10.0.0.0/16
+  vpcName: csye6225-dev-vpc
+  internetGatewayName: dev-vpcGetWay
+  publicRouteTableName: dev-public-route-table
+  privateRouteTableName: dev-private-route-table
+  publicSubnetsName: dev-public-subnet
+  privateSubnetsName: dev-private-subnet
+  publicSubnetAssoName: dev-public-association
+  privateSubnetAssoName: dev-private-association
+  destinationCidrBlock: 0.0.0.0/0
+
+
+
