@@ -1,0 +1,6 @@
+name: csye6225-infra
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: csye6225 Assignment4 in python

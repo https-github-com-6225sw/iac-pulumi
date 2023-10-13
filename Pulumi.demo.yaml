@@ -1,0 +1,14 @@
+config:
+  aws:profile: demo
+  name: demo
+  aws:region: us-west-1
+  destinationCidrBlock: 0.0.0.0/0
+  internetGatewayName: demo-vpcGetWay
+  privateRouteTableName: demo-private-route-table
+  privateSubnetAssoName: demo-private-association
+  privateSubnetsName: demo-private-subnet
+  publicRouteTableName: demo-public-route-table
+  publicSubnetAssoName: demo-public-association
+  publicSubnetsName: demo-public-subnet
+  vpcCidrBlock: 10.0.0.0/16
+  vpcName: csye6225-demo-vpc
