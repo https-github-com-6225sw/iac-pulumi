@@ -1,6 +1,6 @@
-name: csye6225_pulumi
-runtime: java
-description: AWS Java Pulumi program
-
-
-  
+name: csye6225-infra
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: csye6225 Assignment4 in python

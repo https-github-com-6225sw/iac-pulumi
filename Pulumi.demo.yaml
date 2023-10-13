@@ -1,13 +1,14 @@
 config:
-  aws:region: us-east-1
-  csye6225_pulumi:destinationCidrBlock: 0.0.0.0/0
-  csye6225_pulumi:internetGatewayName: demo-vpcGetWay
-  csye6225_pulumi:name: demo
-  csye6225_pulumi:privateRouteTableName: demo-private-route-table
-  csye6225_pulumi:privateSubnetAssoName: demo-private-association
-  csye6225_pulumi:privateSubnetsName: demo-private-subnet
-  csye6225_pulumi:publicRouteTableName: demo-public-route-table
-  csye6225_pulumi:publicSubnetAssoName: demo-public-association
-  csye6225_pulumi:publicSubnetsName: demo-public-subnet
-  csye6225_pulumi:vpcCidrBlock: 10.0.0.0/16
-  csye6225_pulumi:vpcName: csye6225-demo-vpc
+  aws:profile: demo
+  name: demo
+  aws:region: us-west-1
+  destinationCidrBlock: 0.0.0.0/0
+  internetGatewayName: demo-vpcGetWay
+  privateRouteTableName: demo-private-route-table
+  privateSubnetAssoName: demo-private-association
+  privateSubnetsName: demo-private-subnet
+  publicRouteTableName: demo-public-route-table
+  publicSubnetAssoName: demo-public-association
+  publicSubnetsName: demo-public-subnet
+  vpcCidrBlock: 10.0.0.0/16
+  vpcName: csye6225-demo-vpc
