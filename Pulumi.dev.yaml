@@ -1,14 +1,18 @@
 config:
   aws:profile: dev
-  name: dev
-  aws:region: us-west-1
-  vpcCidrBlock: 10.0.0.0/16
-  vpcName: csye6225-dev-vpc
-  internetGatewayName: dev-vpcGetWay
-  publicRouteTableName: dev-public-route-table
-  privateRouteTableName: dev-private-route-table
-  publicSubnetsName: dev-public-subnet
-  privateSubnetsName: dev-private-subnet
-  publicSubnetAssoName: dev-public-association
-  privateSubnetAssoName: dev-private-association
-  destinationCidrBlock: 0.0.0.0/0
+  aws:region: us-east-1
+  csye6225-infra:amiId: ami-0f2f6d25732014eec
+  csye6225-infra:destinationCidrBlock: 0.0.0.0/0
+  csye6225-infra:internetGatewayName: dev-vpcGetWay
+  csye6225-infra:name: dev
+  csye6225-infra:privateRouteTableName: dev-private-route-table
+  csye6225-infra:privateSubnetAssoName: dev-private-association
+  csye6225-infra:privateSubnetsName: dev-private-subnet
+  csye6225-infra:publicRouteTableName: dev-public-route-table
+  csye6225-infra:publicSubnetAssoName: dev-public-association
+  csye6225-infra:publicSubnetsName: dev-public-subnet
+  csye6225-infra:sshkeyName: CSYE6225
+  csye6225-infra:vpcCidrBlock: 10.0.0.0/16
+  csye6225-infra:vpcName: csye6225-dev-vpc
+  csye6225-infra:instanceName: dev-Pulumi-Instance
+  csye6225-infra:appSecurityGroup: dev-Pulumi-security

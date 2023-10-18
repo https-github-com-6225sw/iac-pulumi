@@ -16,6 +16,10 @@ privateSubnetsName = config.require("privateSubnetsName")
 publicSubnetAssoName = config.require("publicSubnetAssoName")
 privateSubnetAssoName = config.require("privateSubnetAssoName")
 destinationCidrBlock = config.require("destinationCidrBlock")
+amiId = config.require("amiId")
+sshkeyName = config.require("sshkeyName")
+instanceName = config.require("instanceName")
+appSecurityGroup = config.require("appSecurityGroup")
 
 # get AZ
 available_az = aws.get_availability_zones(state="available").names
@@ -54,6 +58,8 @@ public_route_table = aws.ec2.RouteTable(publicRouteTableName, vpc_id=vpc.id,
 private_route_table = aws.ec2.RouteTable(privateRouteTableName, vpc_id=vpc.id,
                                         tags={"Name": privateRouteTableName})
 
+#save subnets created in list
+created_publicsubnets =[]
 #create public subnets
 for az_index in range(ind_range):
     public_subnet = aws.ec2.Subnet(publicSubnetsName + str(az_index),
@@ -62,6 +68,8 @@ for az_index in range(ind_range):
                                   cidr_block = str(subnets_list[az_index]),
                                   map_public_ip_on_launch=True,
                                   tags={"Name": publicSubnetsName + str(az_index)})
+    
+    created_publicsubnets.append(public_subnet)
     
     public_association = aws.ec2.RouteTableAssociation(publicSubnetAssoName+str(az_index),
                                                        route_table_id=public_route_table.id,
@@ -91,3 +99,55 @@ public_route = aws.ec2.Route(
     gateway_id=internet_gateway.id,
 )
 
+app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
+    description='EC2 security group for web applications',
+    vpc_id=vpc.id,
+    ingress=[
+        # SSH
+        aws.ec2.SecurityGroupIngressArgs(
+            protocol='tcp',
+            from_port=22,
+            to_port=22,
+            cidr_blocks=['0.0.0.0/0'],
+        ),
+        # HTTP
+        aws.ec2.SecurityGroupIngressArgs(
+            protocol='tcp',
+            from_port=80,
+            to_port=80,
+            cidr_blocks=['0.0.0.0/0'],
+        ),
+        # HTTPS
+        aws.ec2.SecurityGroupIngressArgs(
+            protocol='tcp',
+            from_port=443,
+            to_port=443,
+            cidr_blocks=['0.0.0.0/0'],
+        ),
+        # Your application port (assuming it's 8080 for this example)
+        aws.ec2.SecurityGroupIngressArgs(
+            protocol='tcp',
+            from_port=8080,
+            to_port=8080,
+            cidr_blocks=['0.0.0.0/0'],
+        ),
+    ]
+)
+
+app_instance = aws.ec2.Instance(instanceName,
+    ami=amiId,  # AMI ID created by workflow
+    instance_type='t2.micro', 
+    # security_groups=[app_security_group.name], 
+    vpc_security_group_ids = [app_security_group.id],
+    subnet_id=created_publicsubnets[0].id,
+    disable_api_termination=False,  # No protection against accidental termination
+    root_block_device=aws.ec2.InstanceRootBlockDeviceArgs(
+        volume_size=25,
+        volume_type='gp2',
+        delete_on_termination=True  # ensure EBS volume is terminated with the instance
+    ),
+    key_name=sshkeyName,
+    tags={
+        'Name': instanceName,
+    }
+)

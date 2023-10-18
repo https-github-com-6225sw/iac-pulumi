@@ -1,7 +1,7 @@
 config:
   aws:profile: demo
   name: demo
-  aws:region: us-west-1
+  aws:region: us-east-1
   destinationCidrBlock: 0.0.0.0/0
   internetGatewayName: demo-vpcGetWay
   privateRouteTableName: demo-private-route-table
@@ -12,3 +12,7 @@ config:
   publicSubnetsName: demo-public-subnet
   vpcCidrBlock: 10.0.0.0/16
   vpcName: csye6225-demo-vpc
+  appSecurityGroup: demo-Pulumi-security
+  instanceName: demo-Pulumi-Instance
+  amiId: ami-0f2f6d25732014eec
+  sshkeyName: CSYE6225-demo
