@@ -1,7 +1,7 @@
 config:
   aws:profile: dev
   aws:region: us-east-1
-  csye6225-infra:amiId: ami-0f2f6d25732014eec
+  csye6225-infra:amiId: ami-093837728ae12cd6b
   csye6225-infra:destinationCidrBlock: 0.0.0.0/0
   csye6225-infra:internetGatewayName: dev-vpcGetWay
   csye6225-infra:name: dev
@@ -16,3 +16,8 @@ config:
   csye6225-infra:vpcName: csye6225-dev-vpc
   csye6225-infra:instanceName: dev-Pulumi-Instance
   csye6225-infra:appSecurityGroup: dev-Pulumi-security
+  csye6225-infra:rdsPassword: Wsj13191867918
+  csye6225-infra:rdsUsername: csye6225
+  csye6225-infra:rsdIdentifier: csye6225
+  csye6225-infra:databaseName: csye6225sw
+

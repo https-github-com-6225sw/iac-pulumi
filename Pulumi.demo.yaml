@@ -16,3 +16,8 @@ config:
   instanceName: demo-Pulumi-Instance
   amiId: ami-0f2f6d25732014eec
   sshkeyName: CSYE6225-demo
+  databaseName: csye6225sw
+  rsdIdentifier: csye6225
+  dsUsername: csye6225
+  rdsPassword: Wsj13191867918
+
