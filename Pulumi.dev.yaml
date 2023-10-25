@@ -20,3 +20,4 @@ config:
   csye6225-infra:rdsUsername: csye6225
   csye6225-infra:rsdIdentifier: csye6225
   csye6225-infra:databaseName: csye6225sw
+
