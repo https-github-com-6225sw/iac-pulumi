@@ -1,7 +1,8 @@
 config:
   aws:profile: dev
   aws:region: us-east-1
-  csye6225-infra:amiId: ami-093837728ae12cd6b
+
+  csye6225-infra:amiId: ami-09a9b970b8a869e15
   csye6225-infra:destinationCidrBlock: 0.0.0.0/0
   csye6225-infra:internetGatewayName: dev-vpcGetWay
   csye6225-infra:name: dev
@@ -20,4 +21,3 @@ config:
   csye6225-infra:rdsUsername: csye6225
   csye6225-infra:rsdIdentifier: csye6225
   csye6225-infra:databaseName: csye6225sw
-
