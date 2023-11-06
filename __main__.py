@@ -4,6 +4,7 @@ from ipaddress import ip_network
 import pulumi
 from pulumi_aws import s3
 import pulumi_aws as aws
+import json
 
 config = pulumi.Config()
 vpcCidrBlock = config.require("vpcCidrBlock")
@@ -24,6 +25,10 @@ rdsPassword = config.require("rdsPassword")
 rdsUsername = config.require("rdsUsername")
 rsdIdentifier = config.require("rsdIdentifier")
 databaseName = config.require("databaseName")
+
+domainName = config.require("domainName")
+hostedZoneId = config.require("hostedZoneId")
+cloudWatchRoleName= config.require("cloudWatchRoleName")
 
 # get AZ
 available_az = aws.get_availability_zones(state="available").names
@@ -135,7 +140,7 @@ app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
         ),
         # HTTPS
         aws.ec2.SecurityGroupIngressArgs(
-            protocol='tcp',
+            protocol='tcp', 
             from_port=443,
             to_port=443,
             cidr_blocks=['0.0.0.0/0'],
@@ -208,30 +213,41 @@ ENV_FILE="/etc/systemd/system/service.env"
 sudo sh -c "echo 'DATABASE_URL=jdbc:mysql://{endpoint}/{databaseName}?createDatabaseIfNotExist=true' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_USER={rdsUsername}' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_PASSWORD={rdsPassword}' >> ${{ENV_FILE}}"
-
-sudo groupadd csye6225
-sudo useradd -s /bin/false -g csye6225 -d /opt/csye6225 -m csye6225
-sudo chown csye6225:csye6225 /opt/artifact
-sudo chown csye6225:csye6225 /opt/artifact/cloudwebapp-0.0.1-SNAPSHOT.jar
-sudo chown csye6225:csye6225 /etc/systemd/system/service.env
-sudo chown csye6225:csye6225 /etc/systemd/system/app.service
-sudo chown csye6225:csye6225 /opt/users.csv
-sudo chmod 744 /opt/users.csv
-sudo chmod 744 /etc/systemd/system/app.service
-sudo chmod 744 /etc/systemd/system/service.env
-sudo chmod 744 /opt/artifact/cloudwebapp-0.0.1-SNAPSHOT.jar
-
-sudo systemctl daemon-reload
-sudo systemctl enable app.service
-sudo systemctl stop cloud-final.service
-sudo systemctl start app.service
 """)
+
+
+#iam role
+cloudWatch_role = aws.iam.Role(
+    resource_name= cloudWatchRoleName,
+    force_detach_policies= True,
+    assume_role_policy=json.dumps({
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}),
+    )
+
+attachment = aws.iam.RolePolicyAttachment(
+    "cloudWatchAgentPolicyAttachment",
+    role=cloudWatch_role.name,
+    policy_arn="arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+)
+
+cw_profile = aws.iam.InstanceProfile("cwProfile", role= cloudWatch_role.name)
 
 #create app instance
 app_instance = aws.ec2.Instance(instanceName,
     opts=pulumi.ResourceOptions(depends_on=[my_rds]),
     ami=amiId,  # AMI ID created by workflow
     instance_type='t2.micro', 
+    iam_instance_profile=cw_profile.name,
     # security_groups=[app_security_group.name], 
     vpc_security_group_ids = [app_security_group.id],
     subnet_id=created_publicsubnets[0].id,
@@ -248,3 +264,12 @@ app_instance = aws.ec2.Instance(instanceName,
     }
 )
 
+route53_record = aws.route53.Record(
+    opts=pulumi.ResourceOptions(depends_on=[app_instance]),
+    resource_name= "webServerRecord",
+    zone_id= hostedZoneId,
+    name= domainName,
+    type= "A",
+    ttl= 60,
+    records= [app_instance.public_ip],
+)

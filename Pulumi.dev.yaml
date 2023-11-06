@@ -1,7 +1,7 @@
 config:
   aws:profile: dev
   aws:region: us-east-1
-  csye6225-infra:amiId: ami-09a9b970b8a869e15
+  csye6225-infra:amiId: ami-0114f99bf13bf36d3
   csye6225-infra:destinationCidrBlock: 0.0.0.0/0
   csye6225-infra:internetGatewayName: dev-vpcGetWay
   csye6225-infra:name: dev
@@ -20,3 +20,7 @@ config:
   csye6225-infra:rdsUsername: csye6225
   csye6225-infra:rsdIdentifier: csye6225
   csye6225-infra:databaseName: csye6225sw
+  
+  csye6225-infra:domainName:  dev.csye6225sw.me
+  csye6225-infra:hostedZoneId: Z04767183ANC49TPUCUH2
+  csye6225-infra:cloudWatchRoleName: cloudWatchAgentRole
