@@ -25,3 +25,4 @@ config:
   hostedZoneId: Z04820393TVD9LFPM2T61
   cloudWatchRoleName: cloudWatchAgentRole
 
+

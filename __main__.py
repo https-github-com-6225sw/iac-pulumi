@@ -31,7 +31,6 @@ domainName = config.require("domainName")
 hostedZoneId = config.require("hostedZoneId")
 cloudWatchRoleName= config.require("cloudWatchRoleName")
 
-
 # get AZ
 available_az = aws.get_availability_zones(state="available").names
 az_count = len(available_az)
@@ -121,7 +120,6 @@ public_route = aws.ec2.Route(
     destination_cidr_block=destinationCidrBlock,
     gateway_id=internet_gateway.id,
 )
-
 
 #security group for instance
 app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
@@ -236,7 +234,7 @@ cloudWatch_role = aws.iam.Role(
         }
     ]
 }),
-    )
+)
 
 attachment = aws.iam.RolePolicyAttachment(
     "cloudWatchAgentPolicyAttachment",
@@ -277,3 +275,4 @@ route53_record = aws.route53.Record(
     ttl= 60,
     records= [app_instance.public_ip],
 )
+
