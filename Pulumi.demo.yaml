@@ -14,10 +14,14 @@ config:
   vpcName: csye6225-demo-vpc
   appSecurityGroup: demo-Pulumi-security
   instanceName: demo-Pulumi-Instance
-  amiId: ami-0f2f6d25732014eec
+  amiId: ami-0114f99bf13bf36d3
   sshkeyName: CSYE6225-demo
   databaseName: csye6225sw
   rsdIdentifier: csye6225
   dsUsername: csye6225
   rdsPassword: Wsj13191867918
+
+  domainName: demo.csye6225sw.me
+  hostedZoneId: Z04820393TVD9LFPM2T61
+  cloudWatchRoleName: cloudWatchAgentRole
 
