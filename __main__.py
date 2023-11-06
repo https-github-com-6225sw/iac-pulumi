@@ -26,9 +26,11 @@ rdsUsername = config.require("rdsUsername")
 rsdIdentifier = config.require("rsdIdentifier")
 databaseName = config.require("databaseName")
 
+
 domainName = config.require("domainName")
 hostedZoneId = config.require("hostedZoneId")
 cloudWatchRoleName= config.require("cloudWatchRoleName")
+
 
 # get AZ
 available_az = aws.get_availability_zones(state="available").names
@@ -73,6 +75,7 @@ private_route_table = aws.ec2.RouteTable(privateRouteTableName, vpc_id=vpc.id,
 created_publicsubnets =[]
 created_privatesubnets =[]
 created_privatesubnetsIds= []
+
 #create public subnets
 for az_index in range(ind_range):
     public_subnet = aws.ec2.Subnet(publicSubnetsName + str(az_index),
@@ -118,6 +121,7 @@ public_route = aws.ec2.Route(
     destination_cidr_block=destinationCidrBlock,
     gateway_id=internet_gateway.id,
 )
+
 
 #security group for instance
 app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
