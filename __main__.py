@@ -215,6 +215,7 @@ ENV_FILE="/etc/systemd/system/service.env"
 sudo sh -c "echo 'DATABASE_URL=jdbc:mysql://{endpoint}/{databaseName}?createDatabaseIfNotExist=true' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_USER={rdsUsername}' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_PASSWORD={rdsPassword}' >> ${{ENV_FILE}}"
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/amazon-cloudwatch-config.json
 """)
 
 
