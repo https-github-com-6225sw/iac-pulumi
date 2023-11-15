@@ -5,6 +5,7 @@ import pulumi
 from pulumi_aws import s3
 import pulumi_aws as aws
 import json
+import base64
 
 config = pulumi.Config()
 vpcCidrBlock = config.require("vpcCidrBlock")
@@ -72,6 +73,7 @@ private_route_table = aws.ec2.RouteTable(privateRouteTableName, vpc_id=vpc.id,
 
 #save subnets created in list
 created_publicsubnets =[]
+created_publicsubnetsIds=[]
 created_privatesubnets =[]
 created_privatesubnetsIds= []
 
@@ -85,7 +87,7 @@ for az_index in range(ind_range):
                                   tags={"Name": publicSubnetsName + str(az_index)})
     
     created_publicsubnets.append(public_subnet)
-    
+    created_publicsubnetsIds.append(public_subnet.id)
     public_association = aws.ec2.RouteTableAssociation(publicSubnetAssoName+str(az_index),
                                                        route_table_id=public_route_table.id,
                                                        subnet_id=public_subnet.id)
@@ -121,39 +123,68 @@ public_route = aws.ec2.Route(
     gateway_id=internet_gateway.id,
 )
 
-#security group for instance
-app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
-    description='EC2 security group for web applications',
+
+#security group for load balancer
+load_balancer_sg = aws.ec2.SecurityGroup('LoadBalancerSecurityGroup',
+    description='Enable HTTP and HTTPS access',
     vpc_id=vpc.id,
     ingress=[
-        # SSH
-        aws.ec2.SecurityGroupIngressArgs(
-            protocol='tcp',
-            from_port=22,
-            to_port=22,
-            cidr_blocks=['0.0.0.0/0'],
-        ),
-        # HTTP
-        aws.ec2.SecurityGroupIngressArgs(
-            protocol='tcp',
-            from_port=80,
-            to_port=80,
-            cidr_blocks=['0.0.0.0/0'],
-        ),
+        # HTTP access from anywhere
+        {'protocol': 'tcp', 'from_port': 80, 'to_port': 80, 'cidr_blocks': ['0.0.0.0/0']},
+        # HTTPS access from anywhere
+        {'protocol': 'tcp', 'from_port': 443, 'to_port': 443, 'cidr_blocks': ['0.0.0.0/0']},
+        
+    ], 
+    egress=[
+        # Allow all outbound traffic.
+        {
+            "protocol": "-1",
+            "from_port": 0,
+            "to_port": 0,
+            "cidr_blocks": ["0.0.0.0/0"],
+        }
+    ],
+    tags={
+        "Name": "load balancer security group",
+    })
+
+#security group for instance
+app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
+    opts=pulumi.ResourceOptions(depends_on=[load_balancer_sg]),
+    description='EC2 security group for web applications',
+    vpc_id=vpc.id,
+    # ingress=[
+    #     # SSH
+    #     aws.ec2.SecurityGroupIngressArgs(
+    #         protocol='tcp',
+    #         from_port=22,
+    #         to_port=22,
+    #         # cidr_blocks=['0.0.0.0/0'],
+    #         source_security_group_id=load_balancer_sg.id,
+    #     ),
+    #     # HTTP
+    #     aws.ec2.SecurityGroupIngressArgs(
+    #         protocol='tcp',
+    #         from_port=80,
+    #         to_port=80,
+    #         # cidr_blocks=['0.0.0.0/0'],
+    #         source_security_group_id=load_balancer_sg.id,
+    #     ),
         # HTTPS
-        aws.ec2.SecurityGroupIngressArgs(
-            protocol='tcp', 
-            from_port=443,
-            to_port=443,
-            cidr_blocks=['0.0.0.0/0'],
-        ),
+        # aws.ec2.SecurityGroupIngressArgs(
+        #     protocol='tcp',  
+        #     from_port=443,
+        #     to_port=443,
+        #     # cidr_blocks=['0.0.0.0/0'],
+        # ),
         # Your application port (assuming it's 8080 for this example)
-        aws.ec2.SecurityGroupIngressArgs(
-            protocol='tcp',
-            from_port=8080,
-            to_port=8080,
-            cidr_blocks=['0.0.0.0/0'],
-        )],
+        # aws.ec2.SecurityGroupIngressArgs(
+        #     protocol='tcp',
+        #     from_port=8080,
+        #     to_port=8080,
+        #     # cidr_blocks=['0.0.0.0/0'],
+        #     source_security_group_id=load_balancer_sg.id,
+        # )],
     egress=[aws.ec2.SecurityGroupEgressArgs(
         from_port=0,
         to_port=0,
@@ -161,10 +192,12 @@ app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
         cidr_blocks=["0.0.0.0/0"],
         ipv6_cidr_blocks=["::/0"],
     )],
-     tags={
+     tags={ 
         "Name": "Security group for ec2",
     }
 )
+
+
 
 #security group for rds
 database_security_group = aws.ec2.SecurityGroup("databaseSecurityGroup",
@@ -180,6 +213,7 @@ database_security_group = aws.ec2.SecurityGroup("databaseSecurityGroup",
         }
     ],
     tags={"Name": "DatabaseSecurityGroup"})
+
 
 # Add an ingress rule for MariaDB
 mysql_ingress = aws.ec2.SecurityGroupRule("mysqlIngressRule",
@@ -210,13 +244,24 @@ my_rds = aws.rds.Instance("SQLInstance",
         skip_final_snapshot=True,
         vpc_security_group_ids=[database_security_group.id])
 
-user_data_content = my_rds.endpoint.apply(lambda endpoint:f"""#!/bin/bash
+# user_data_content = my_rds.endpoint.apply(lambda endpoint:f"""#!/bin/bash
+# ENV_FILE="/etc/systemd/system/service.env"
+# sudo sh -c "echo 'DATABASE_URL=jdbc:mysql://{endpoint}/{databaseName}?createDatabaseIfNotExist=true' >> ${{ENV_FILE}}"
+# sudo sh -c "echo 'DATABASE_USER={rdsUsername}' >> ${{ENV_FILE}}"
+# sudo sh -c "echo 'DATABASE_PASSWORD={rdsPassword}' >> ${{ENV_FILE}}"
+# sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/amazon-cloudwatch-config.json
+# """)
+
+def create_user_data(endpoint):
+    return f"""#!/bin/bash
 ENV_FILE="/etc/systemd/system/service.env"
 sudo sh -c "echo 'DATABASE_URL=jdbc:mysql://{endpoint}/{databaseName}?createDatabaseIfNotExist=true' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_USER={rdsUsername}' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_PASSWORD={rdsPassword}' >> ${{ENV_FILE}}"
-""")
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/amazon-cloudwatch-config.json
+"""
 
+user_data_content = my_rds.endpoint.apply(lambda endpoint: base64.b64encode(create_user_data(endpoint).encode('utf-8')).decode('utf-8'))
 
 #iam role
 cloudWatch_role = aws.iam.Role(
@@ -245,34 +290,156 @@ attachment = aws.iam.RolePolicyAttachment(
 cw_profile = aws.iam.InstanceProfile("cwProfile", role= cloudWatch_role.name)
 
 #create app instance
-app_instance = aws.ec2.Instance(instanceName,
+# app_instance = aws.ec2.Instance(instanceName,
+#     opts=pulumi.ResourceOptions(depends_on=[my_rds]),
+#     ami=amiId,  # AMI ID created by workflow
+#     instance_type='t2.micro', 
+#     iam_instance_profile=cw_profile.name,
+#     # security_groups=[app_security_group.name], 
+#     vpc_security_group_ids = [app_security_group.id],
+#     subnet_id=created_publicsubnets[0].id,
+#     disable_api_termination=False,# No protection against accidental termination
+#     root_block_device=aws.ec2.InstanceRootBlockDeviceArgs(
+#         volume_size=25,
+#         volume_type='gp2',
+#         delete_on_termination=True  # ensure EBS volume is terminated with the instance
+#     ),
+#     key_name=sshkeyName,
+#     user_data= user_data_content,
+#     tags={
+#         'Name': instanceName,
+#     }
+# )
+
+# Create Launch Template
+launch_template = aws.ec2.LaunchTemplate('WebAppLaunchTemplate',
     opts=pulumi.ResourceOptions(depends_on=[my_rds]),
-    ami=amiId,  # AMI ID created by workflow
-    instance_type='t2.micro', 
-    iam_instance_profile=cw_profile.name,
-    # security_groups=[app_security_group.name], 
-    vpc_security_group_ids = [app_security_group.id],
-    subnet_id=created_publicsubnets[0].id,
-    disable_api_termination=False,# No protection against accidental termination
-    root_block_device=aws.ec2.InstanceRootBlockDeviceArgs(
-        volume_size=25,
-        volume_type='gp2',
-        delete_on_termination=True  # ensure EBS volume is terminated with the instance
-    ),
-    key_name=sshkeyName,
+    image_id= amiId,
+    instance_type='t2.micro',
+    key_name= sshkeyName,
+    network_interfaces=[{
+        'associate_public_ip_address': True,
+        'security_groups': [app_security_group.id],
+    }],
     user_data= user_data_content,
+    iam_instance_profile={'name': cw_profile.name},
     tags={
-        'Name': instanceName,
+        'Name': 'instance template'
     }
 )
 
+# Create a Target Group
+target_group = aws.lb.TargetGroup('appTargetGroup',
+    port=8080,
+    protocol='HTTP',
+    target_type='instance',
+    vpc_id=vpc.id,
+    health_check={
+        'enabled': True,
+        'path': '/',  # Adjust the path according to your app's health check endpoint
+        'protocol': 'HTTP',
+    })
+
+
+# Auto Scaling Group
+auto_scaling_group = aws.autoscaling.Group('WebAppAutoScalingGroup',
+    min_size=1,
+    max_size=3,
+    desired_capacity=1,
+    default_cooldown=60,
+    vpc_zone_identifiers=[created_publicsubnets[0].id],
+    target_group_arns =[target_group.arn],
+    launch_template={
+        'id': launch_template.id,
+        'version': '$Latest'
+    },
+    tags=[{
+        'key': 'Name',
+        'value': 'web-app-instance',
+        'propagate_at_launch': True
+    }]
+)
+
+
+# Auto Scaling Policies
+scale_up_policy = aws.autoscaling.Policy('ScaleUp',
+    autoscaling_group_name=auto_scaling_group.name,
+    adjustment_type='ChangeInCapacity',
+    scaling_adjustment=1,
+    cooldown=60,
+    policy_type='SimpleScaling')
+
+scale_down_policy = aws.autoscaling.Policy('ScaleDown',
+    autoscaling_group_name=auto_scaling_group.name,
+    adjustment_type='ChangeInCapacity',
+    scaling_adjustment=-1,
+    cooldown=60,
+    policy_type='SimpleScaling')
+
+# CloudWatch Alarms
+scale_up_alarm = aws.cloudwatch.MetricAlarm('ScaleUpAlarm',
+    metric_name='CPUUtilization',
+    namespace='AWS/EC2',
+    statistic='Average',
+    comparison_operator='GreaterThanThreshold',
+    threshold=5,
+    period=300,
+    evaluation_periods=1,
+    alarm_actions=[scale_up_policy.arn],
+    dimensions={'AutoScalingGroupName': auto_scaling_group.name})
+
+scale_down_alarm = aws.cloudwatch.MetricAlarm('ScaleDownAlarm',
+    metric_name='CPUUtilization',
+    namespace='AWS/EC2',
+    statistic='Average',
+    comparison_operator='LessThanThreshold',
+    threshold=3,
+    period=300,
+    evaluation_periods=1,
+    alarm_actions=[scale_down_policy.arn],
+    dimensions={'AutoScalingGroupName': auto_scaling_group.name})
+
+# Application Load Balancer
+load_balancer = aws.lb.LoadBalancer('WebAppLoadBalancer',
+    load_balancer_type='application',
+    security_groups=[load_balancer_sg.id],
+    subnets=created_publicsubnetsIds)
+
+app_ingress = aws.ec2.SecurityGroupRule("appIngressRule1",
+                                        type="ingress",
+                                        protocol='tcp',
+                                        from_port=22,
+                                        to_port=22,
+                                        security_group_id=app_security_group.id,
+                                        source_security_group_id=load_balancer_sg.id,)
+app_ingress2 = aws.ec2.SecurityGroupRule("appIngressRule2",
+                                        type="ingress",
+                                        protocol='tcp',
+                                        from_port=8080,
+                                        to_port=8080,
+                                        security_group_id=app_security_group.id,
+                                        source_security_group_id=load_balancer_sg.id,)
+
+
+# Create a Listener
+listener = aws.lb.Listener('httpListener',
+    load_balancer_arn=load_balancer.arn,
+    port=80,
+    default_actions=[aws.lb.ListenerDefaultActionArgs(
+        type="forward",
+        target_group_arn=target_group.arn,
+    )])
+
 route53_record = aws.route53.Record(
-    opts=pulumi.ResourceOptions(depends_on=[app_instance]),
+    # opts=pulumi.ResourceOptions(depends_on=[app_instance]),
     resource_name= "webServerRecord",
     zone_id= hostedZoneId,
     name= domainName,
     type= "A",
-    ttl= 60,
-    records= [app_instance.public_ip],
-)
+    aliases=[aws.route53.RecordAliasArgs(
+        name=load_balancer.dns_name,
+        zone_id=load_balancer.zone_id,
+        evaluate_target_health=True,
+    )])
+
 
