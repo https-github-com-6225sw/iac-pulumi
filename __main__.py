@@ -410,8 +410,10 @@ app_ingress = aws.ec2.SecurityGroupRule("appIngressRule1",
                                         protocol='tcp',
                                         from_port=22,
                                         to_port=22,
-                                        security_group_id=app_security_group.id,
-                                        source_security_group_id=load_balancer_sg.id,)
+                                        cidr_blocks=['0.0.0.0/0'],
+                                        security_group_id=app_security_group.id)
+                                        # source_security_group_id=load_balancer_sg.id,)
+                                        
 app_ingress2 = aws.ec2.SecurityGroupRule("appIngressRule2",
                                         type="ingress",
                                         protocol='tcp',
