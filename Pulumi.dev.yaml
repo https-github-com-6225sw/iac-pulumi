@@ -24,3 +24,4 @@ config:
   csye6225-infra:domainName:  dev.csye6225sw.me
   csye6225-infra:hostedZoneId: Z04767183ANC49TPUCUH2
   csye6225-infra:cloudWatchRoleName: cloudWatchAgentRole
+

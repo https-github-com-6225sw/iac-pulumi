@@ -27,6 +27,7 @@ rdsUsername = config.require("rdsUsername")
 rsdIdentifier = config.require("rsdIdentifier")
 databaseName = config.require("databaseName")
 
+
 domainName = config.require("domainName")
 hostedZoneId = config.require("hostedZoneId")
 cloudWatchRoleName= config.require("cloudWatchRoleName")
@@ -75,6 +76,7 @@ created_publicsubnets =[]
 created_publicsubnetsIds=[]
 created_privatesubnets =[]
 created_privatesubnetsIds= []
+
 #create public subnets
 for az_index in range(ind_range):
     public_subnet = aws.ec2.Subnet(publicSubnetsName + str(az_index),
@@ -439,6 +441,5 @@ route53_record = aws.route53.Record(
         zone_id=load_balancer.zone_id,
         evaluate_target_health=True,
     )])
-
 
 
