@@ -1,26 +1,35 @@
 config:
   aws:profile: demo
-  name: demo
   aws:region: us-east-1
-  destinationCidrBlock: 0.0.0.0/0
-  internetGatewayName: demo-vpcGetWay
-  privateRouteTableName: demo-private-route-table
-  privateSubnetAssoName: demo-private-association
-  privateSubnetsName: demo-private-subnet
-  publicRouteTableName: demo-public-route-table
-  publicSubnetAssoName: demo-public-association
-  publicSubnetsName: demo-public-subnet
-  vpcCidrBlock: 10.0.0.0/16
-  vpcName: csye6225-demo-vpc
-  appSecurityGroup: demo-Pulumi-security
-  instanceName: demo-Pulumi-Instance
-  amiId: ami-0114f99bf13bf36d3
-  sshkeyName: CSYE6225-demo
-  databaseName: csye6225sw
-  rsdIdentifier: csye6225
-  rdsUsername: csye6225
-  rdsPassword: Wsj13191867918
+  gcp:project: csye6225-demo-405720
 
-  domainName: demo.csye6225sw.me
-  hostedZoneId: Z04820393TVD9LFPM2T61
-  cloudWatchRoleName: cloudWatchAgentRole
+  csye6225-infra:amiId: ami-096007b783184e0c8
+  csye6225-infra:appSecurityGroup: demo-Pulumi-security
+  csye6225-infra:awsAccountNumber: "099917940770"
+  csye6225-infra:cloudWatchRoleName: cloudWatchAgentRole
+  csye6225-infra:databaseName: csye6225sw
+  csye6225-infra:destinationCidrBlock: 0.0.0.0/0
+  csye6225-infra:domainName: demo.csye6225sw.me
+  csye6225-infra:hostedZoneId: Z04820393TVD9LFPM2T61
+  csye6225-infra:instanceName: demo-Pulumi-Instance
+  csye6225-infra:internetGatewayName: demo-vpcGetWay
+  csye6225-infra:mailgunAPI: 5d2b1caa-0cd75331
+  csye6225-infra:mailgunKey:
+    secure: AAABAFki94vxHCfIZmSvy3jqSCCfI56LpbLWH/rnX8/oGTnVnD0D/7kh9s4hCqRunqq7ujo5r4U/uYtUiDBnr9c7U5NKmz5v0RfPk4hVjRvUgw==
+  csye6225-infra:name: demo
+  csye6225-infra:privateRouteTableName: demo-private-route-table
+  csye6225-infra:privateSubnetAssoName: demo-private-association
+  csye6225-infra:privateSubnetsName: demo-private-subnet
+  csye6225-infra:publicRouteTableName: demo-public-route-table
+  csye6225-infra:publicSubnetAssoName: demo-public-association
+  csye6225-infra:publicSubnetsName: demo-public-subnet
+  csye6225-infra:rdsPassword: Wsj13191867918
+  csye6225-infra:rdsUsername: csye6225
+  csye6225-infra:rsdIdentifier: csye6225
+  csye6225-infra:sshkeyName: CSYE6225-demo
+  csye6225-infra:vpcCidrBlock: 10.0.0.0/16
+  csye6225-infra:vpcName: csye6225-demo-vpc
+  csye6225-infra:bucketName: csye6225sw-demo-bucket
+  csye6225-infra:dynamoDBName: CSYE6225Email-demo
+  csye6225-infra:topicName: CSYE6225-demo
+  
