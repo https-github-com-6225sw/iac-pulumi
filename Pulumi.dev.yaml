@@ -1,9 +1,21 @@
 config:
   aws:profile: dev
   aws:region: us-east-1
-  csye6225-infra:amiId: ami-0e2bb50ca9fb22401
+  gcp:project: csye6225-dev-405720
+
+  csye6225-infra:amiId: ami-0501bc5c5e8dcf264
+  csye6225-infra:appSecurityGroup: dev-Pulumi-security
+  csye6225-infra:awsAccountNumber: "603808807036"
+  csye6225-infra:cloudWatchRoleName: cloudWatchAgentRole
+  csye6225-infra:databaseName: csye6225sw
   csye6225-infra:destinationCidrBlock: 0.0.0.0/0
+  csye6225-infra:domainName: dev.csye6225sw.me
+  csye6225-infra:hostedZoneId: Z04767183ANC49TPUCUH2
+  csye6225-infra:instanceName: dev-Pulumi-Instance
   csye6225-infra:internetGatewayName: dev-vpcGetWay
+  csye6225-infra:mailgunAPI: 5d2b1caa-0cd75331
+  csye6225-infra:mailgunKey:
+    secure: AAABAEzC3xtubEIOLvL8VL7z5IglSqXx+ZTtWShBPvqXKczO0FPBXdM8d5UqJTDwaYCBeu6lv4c2IkVfwVJ+FyaJk2zRbvv3JORPheuhDuJD4w==
   csye6225-infra:name: dev
   csye6225-infra:privateRouteTableName: dev-private-route-table
   csye6225-infra:privateSubnetAssoName: dev-private-association
@@ -11,17 +23,13 @@ config:
   csye6225-infra:publicRouteTableName: dev-public-route-table
   csye6225-infra:publicSubnetAssoName: dev-public-association
   csye6225-infra:publicSubnetsName: dev-public-subnet
-  csye6225-infra:sshkeyName: CSYE6225
-  csye6225-infra:vpcCidrBlock: 10.0.0.0/16
-  csye6225-infra:vpcName: csye6225-dev-vpc
-  csye6225-infra:instanceName: dev-Pulumi-Instance
-  csye6225-infra:appSecurityGroup: dev-Pulumi-security
   csye6225-infra:rdsPassword: Wsj13191867918
   csye6225-infra:rdsUsername: csye6225
   csye6225-infra:rsdIdentifier: csye6225
-  csye6225-infra:databaseName: csye6225sw
-  
-  csye6225-infra:domainName:  dev.csye6225sw.me
-  csye6225-infra:hostedZoneId: Z04767183ANC49TPUCUH2
-  csye6225-infra:cloudWatchRoleName: cloudWatchAgentRole
+  csye6225-infra:sshkeyName: CSYE6225
+  csye6225-infra:topicName: CSYE6225
+  csye6225-infra:vpcCidrBlock: 10.0.0.0/16
+  csye6225-infra:vpcName: csye6225-dev-vpc
+  csye6225-infra:bucketName: csye6225-sw
+  csye6225-infra:dynamoDBName: CSYE6225Email-dev
 

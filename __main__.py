@@ -6,6 +6,14 @@ from pulumi_aws import s3
 import pulumi_aws as aws
 import json
 import base64
+from pulumi_gcp import storage
+import pulumi_gcp as gcp
+
+aws_config = pulumi.Config("aws")
+aws_region = aws_config.require("region")
+
+gcp_config = pulumi.Config("gcp")
+projectId = gcp_config.require("project")
 
 config = pulumi.Config()
 vpcCidrBlock = config.require("vpcCidrBlock")
@@ -32,22 +40,41 @@ domainName = config.require("domainName")
 hostedZoneId = config.require("hostedZoneId")
 cloudWatchRoleName= config.require("cloudWatchRoleName")
 
+topicName= config.require("topicName")
+awsAccountNumber = config.require("awsAccountNumber")
+
+### Create a new Google Service Account
+service_account = gcp.serviceaccount.Account("CSYE6225sw-storage",
+    account_id="csye6225sw-storage",
+    display_name="CSYE6225sw-storage")
+
+### Binding Role for service account
+storage_object_user_role_binding = gcp.projects.IAMBinding("storage-object-user-role-binding",
+    role="roles/storage.objectUser",
+    project=projectId,
+    members=[pulumi.Output.concat("serviceAccount:", service_account.email)],
+)
+
+### Create a new key for the service account
+service_account_key = gcp.serviceaccount.Key("CSYE6225sw-key",
+    service_account_id=service_account.name)
+
 # get AZ
 available_az = aws.get_availability_zones(state="available").names
 az_count = len(available_az)
 pulumi.info(str(available_az[0]))
 
-#get the number of subnets create
+# get the number of subnets create
 ind_range = 0
 if az_count >= 3:
     ind_range = 3
 else:
     ind_range = az_count
     
-#get subnets block list
+# get subnets block list
 subnets_list = list(ip_network(vpcCidrBlock).subnets(new_prefix=24))
 
-#create VPC
+### create VPC
 vpc = aws.ec2.Vpc(vpcName,
     cidr_block = vpcCidrBlock,
     instance_tenancy = "default",
@@ -57,14 +84,14 @@ vpc = aws.ec2.Vpc(vpcName,
         "Name": vpcName,
     })
 
-#internet getway
+### internet getway
 internet_gateway = aws.ec2.InternetGateway(internetGatewayName,
     vpc_id = vpc.id,
     tags={
         "Name": internetGatewayName,
     })
 
-#public and private route table
+### public and private route table
 public_route_table = aws.ec2.RouteTable(publicRouteTableName, vpc_id=vpc.id,
                                         tags={"Name": publicRouteTableName})
 
@@ -77,7 +104,7 @@ created_publicsubnetsIds=[]
 created_privatesubnets =[]
 created_privatesubnetsIds= []
 
-#create public subnets
+### create public subnets
 for az_index in range(ind_range):
     public_subnet = aws.ec2.Subnet(publicSubnetsName + str(az_index),
                                   availability_zone = available_az[az_index],
@@ -92,7 +119,7 @@ for az_index in range(ind_range):
                                                        route_table_id=public_route_table.id,
                                                        subnet_id=public_subnet.id)
     
-# #create private subnets
+### create private subnets
 ind_cidr = ind_range
 for az_index in range(ind_range):
     private_subnet = aws.ec2.Subnet(privateSubnetsName+str(az_index),
@@ -109,13 +136,13 @@ for az_index in range(ind_range):
     created_privatesubnetsIds.append(private_subnet.id)
     ind_cidr += 1
 
-# Create a DB Subnet Group
+### Create a DB Subnet Group
 db_subnet_group = aws.rds.SubnetGroup("my-db-subnet-group",
     subnet_ids=created_privatesubnetsIds,
     description="private DB subnet group for rds"
 )
     
-#add public cidr destination and gateway
+### add public cidr destination and gateway
 public_route = aws.ec2.Route(
     "public-route",
     route_table_id=public_route_table.id,
@@ -124,7 +151,7 @@ public_route = aws.ec2.Route(
 )
 
 
-#security group for load balancer
+### security group for load balancer
 load_balancer_sg = aws.ec2.SecurityGroup('LoadBalancerSecurityGroup',
     description='Enable HTTP and HTTPS access',
     vpc_id=vpc.id,
@@ -148,7 +175,7 @@ load_balancer_sg = aws.ec2.SecurityGroup('LoadBalancerSecurityGroup',
         "Name": "load balancer security group",
     })
 
-#security group for instance
+### security group for instance
 app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
     opts=pulumi.ResourceOptions(depends_on=[load_balancer_sg]),
     description='EC2 security group for web applications',
@@ -198,8 +225,7 @@ app_security_group = aws.ec2.SecurityGroup(appSecurityGroup,
 )
 
 
-
-#security group for rds
+### security group for rds
 database_security_group = aws.ec2.SecurityGroup("databaseSecurityGroup",
     description="My RDS security group",
     vpc_id=vpc.id,
@@ -244,13 +270,6 @@ my_rds = aws.rds.Instance("SQLInstance",
         skip_final_snapshot=True,
         vpc_security_group_ids=[database_security_group.id])
 
-# user_data_content = my_rds.endpoint.apply(lambda endpoint:f"""#!/bin/bash
-# ENV_FILE="/etc/systemd/system/service.env"
-# sudo sh -c "echo 'DATABASE_URL=jdbc:mysql://{endpoint}/{databaseName}?createDatabaseIfNotExist=true' >> ${{ENV_FILE}}"
-# sudo sh -c "echo 'DATABASE_USER={rdsUsername}' >> ${{ENV_FILE}}"
-# sudo sh -c "echo 'DATABASE_PASSWORD={rdsPassword}' >> ${{ENV_FILE}}"
-# sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/amazon-cloudwatch-config.json
-# """)
 
 def create_user_data(endpoint):
     return f"""#!/bin/bash
@@ -258,12 +277,17 @@ ENV_FILE="/etc/systemd/system/service.env"
 sudo sh -c "echo 'DATABASE_URL=jdbc:mysql://{endpoint}/{databaseName}?createDatabaseIfNotExist=true' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_USER={rdsUsername}' >> ${{ENV_FILE}}"
 sudo sh -c "echo 'DATABASE_PASSWORD={rdsPassword}' >> ${{ENV_FILE}}"
+sudo sh -c "echo 'TOPIC_ARN=arn:aws:sns:{aws_region}:{awsAccountNumber}:{topicName}' >> ${{ENV_FILE}}"
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/amazon-cloudwatch-config.json
 """
 
 user_data_content = my_rds.endpoint.apply(lambda endpoint: base64.b64encode(create_user_data(endpoint).encode('utf-8')).decode('utf-8'))
+# user_data_content = pulumi.Output.all(my_rds.endpoint, awsAccessKey, awsSecretKey).apply(
+#     lambda args: base64.b64encode(create_user_data(args[0], args[1], args[2]).encode('utf-8')).decode('utf-8')
+# )
 
-#iam role
+
+### create iam role for cloudwatch
 cloudWatch_role = aws.iam.Role(
     resource_name= cloudWatchRoleName,
     force_detach_policies= True,
@@ -281,12 +305,26 @@ cloudWatch_role = aws.iam.Role(
 }),
 )
 
+
+
+#attach policy to cloudwatch role
 attachment = aws.iam.RolePolicyAttachment(
     "cloudWatchAgentPolicyAttachment",
     role=cloudWatch_role.name,
     policy_arn="arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
 )
 
+#attachSNSAccess to template
+sns_attachment = aws.iam.RolePolicyAttachment(
+    "SNSAccessPolicyAttachment",
+    role=cloudWatch_role.name,
+    policy_arn="arn:aws:iam::aws:policy/AmazonSNSFullAccess",
+    
+)
+
+
+# arn:aws:iam::aws:policy/AmazonSNSFullAccess
+#dynamoDB
 cw_profile = aws.iam.InstanceProfile("cwProfile", role= cloudWatch_role.name)
 
 #create app instance
@@ -361,7 +399,7 @@ auto_scaling_group = aws.autoscaling.Group('WebAppAutoScalingGroup',
 )
 
 
-# Auto Scaling Policies
+### Auto Scaling Policies
 scale_up_policy = aws.autoscaling.Policy('ScaleUp',
     autoscaling_group_name=auto_scaling_group.name,
     adjustment_type='ChangeInCapacity',
@@ -376,7 +414,7 @@ scale_down_policy = aws.autoscaling.Policy('ScaleDown',
     cooldown=60,
     policy_type='SimpleScaling')
 
-# CloudWatch Alarms
+### CloudWatch Alarms
 scale_up_alarm = aws.cloudwatch.MetricAlarm('ScaleUpAlarm',
     metric_name='CPUUtilization',
     namespace='AWS/EC2',
@@ -399,7 +437,7 @@ scale_down_alarm = aws.cloudwatch.MetricAlarm('ScaleDownAlarm',
     alarm_actions=[scale_down_policy.arn],
     dimensions={'AutoScalingGroupName': auto_scaling_group.name})
 
-# Application Load Balancer
+### Application Load Balancer
 load_balancer = aws.lb.LoadBalancer('WebAppLoadBalancer',
     load_balancer_type='application',
     security_groups=[load_balancer_sg.id],
@@ -423,7 +461,7 @@ app_ingress2 = aws.ec2.SecurityGroupRule("appIngressRule2",
                                         source_security_group_id=load_balancer_sg.id,)
 
 
-# Create a Listener
+### Create a Listener
 listener = aws.lb.Listener('httpListener',
     load_balancer_arn=load_balancer.arn,
     port=80,
@@ -445,3 +483,110 @@ route53_record = aws.route53.Record(
     )])
 
 
+### Create IAM role for Lambda Function
+lambda_role = aws.iam.Role("lambdaRole",
+    assume_role_policy=json.dumps({
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}))
+
+### IAM policy to be attached to the Lambda Role
+# lambda_policy = aws.iam.Policy("lambdaPolicy",
+#     policy=pulumi.Output.all(service_account_key.private_key).apply(lambda key: json.dumps({
+#         "Version": "2012-10-17",
+#         "Statement": [
+#             # Add necessary permissions
+#         ],
+#     })))
+
+#attach policy to lambda role
+lambda_role_attachment = aws.iam.RolePolicyAttachment(
+    "LambdaPolicyAttachment",
+    role=lambda_role.name,
+    policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+)
+
+#attach dynamoDB Access to cloud watch
+dynamoDB_attachment = aws.iam.RolePolicyAttachment(
+    "dynamoDBPolicyAttachment",
+    role=lambda_role.name,
+    policy_arn="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess",
+    
+)
+
+def create_lambda_function(env_var):
+    return aws.lambda_.Function("myLambdaFunction",
+                                runtime="python3.10",
+                                code=pulumi.AssetArchive({
+                                    ".": pulumi.FileArchive("./my_deployment_package.zip")
+                                }),
+                                handler="lambda_function.lambda_handler", 
+                                role=lambda_role.arn,
+                                name="csye6225LambdaFunc",
+                                environment={
+                                    "variables": {
+                                         "DYNAMO_DB_TBALE": config.require("dynamoDBName"),
+                                         "SERVICE_KEY": env_var,
+                                         "MAILGUN_API": config.require("mailgunAPI"),
+                                         "MAILGUN_KEY": config.require_secret("mailgunKey"),
+                                         "BUCKET_NAME": config.require("bucketName")
+                                    }
+                                })
+
+
+### Create Lambda Function
+lambda_function = service_account_key.private_key.apply(lambda key: create_lambda_function(key))
+
+
+# lambda_function = aws.lambda_.Function("myLambdaFunction",
+#                                        opts=pulumi.ResourceOptions(depends_on=[lambda_role_attachment,
+#                                                                                service_account_key,]),
+#     code=pulumi.FileArchive("./my_deployment_package.zip"),
+#     role=lambda_role.arn,
+#     handler="lambda_function.lambda_handler", 
+#     runtime="python3.10",  # Specify runtime
+#     environment=aws.lambda_.FunctionEnvironmentArgs(
+#         variables = {
+#             "SERVICE_KEY": service_account_key.private_key.apply(lambda key: key),
+#             "MAILGUN_API": config.require("mailgunAPI"),
+#             "MAILGUN_KEY": config.require_secret("mailgunKey")
+#         },
+#     ))
+
+### Create SNS topic for post submission
+submission_snstopic =aws.sns.Topic("csye6225Topic", name=topicName)
+
+### Subscribe the Lambda function to the SNS topic 
+with_sns = aws.lambda_.Permission("withSns",
+    action="lambda:InvokeFunction",
+    function=lambda_function.name,
+    principal="sns.amazonaws.com",
+    source_arn=submission_snstopic.arn)
+
+subscription = aws.sns.TopicSubscription('mySubscription',
+    topic=submission_snstopic.arn,
+    protocol='lambda',
+    endpoint=lambda_function.arn
+)
+
+### Create Dynamodb
+dynamo_table = aws.dynamodb.Table("TrackEmail",
+    attributes=[
+        aws.dynamodb.TableAttributeArgs(
+            name="submission_id",
+            type="S",  # 'S' for string, 'N' for number, 'B' for binary
+        ),
+        # Add other attributes if they are part of your primary or sort keys
+    ],
+    name=config.require("dynamoDBName"),
+    hash_key="submission_id",  # Partition key
+    billing_mode="PAY_PER_REQUEST",  # or "PROVISIONED" for provisioned throughput
+)
