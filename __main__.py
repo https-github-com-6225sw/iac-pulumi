@@ -35,6 +35,7 @@ rdsUsername = config.require("rdsUsername")
 rsdIdentifier = config.require("rsdIdentifier")
 databaseName = config.require("databaseName")
 
+
 domainName = config.require("domainName")
 hostedZoneId = config.require("hostedZoneId")
 cloudWatchRoleName= config.require("cloudWatchRoleName")

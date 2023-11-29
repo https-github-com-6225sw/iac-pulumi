@@ -32,3 +32,4 @@ config:
   csye6225-infra:vpcName: csye6225-dev-vpc
   csye6225-infra:bucketName: csye6225-sw
   csye6225-infra:dynamoDBName: CSYE6225Email-dev
+
