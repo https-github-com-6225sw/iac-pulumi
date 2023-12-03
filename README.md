@@ -27,7 +27,7 @@ pulumi up
 ```
 ### Import SSL Certificate to AWS by CLI
 
-* Put certificate-chain.pem, my-server-vertificate.pem, and my-private-key-pem in the same folder
+* Put certificate-chain.pem, my-server-vertificate.pem, and my-private-key.pem in the same folder
 
 * cd the this folder
 
