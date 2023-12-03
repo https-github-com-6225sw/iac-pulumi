@@ -28,6 +28,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.zip
 
 # Django stuff:
 *.log
