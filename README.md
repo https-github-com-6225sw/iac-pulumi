@@ -32,9 +32,9 @@ pulumi up
 * cd the this folder
 
 * Run
-  ```
-  aws iam upload-server-certificate --server-certificate-name certificate_object_name --certificate-body file://my-server-certificate.pem --    private-key file://my-private-key.pem --certificate-chain file://certificate-chain.pem
-  ```
+```
+aws iam upload-server-certificate --server-certificate-name certificate_object_name --certificate-body file://my-server-certificate.pem --    private-key file://my-private-key.pem --certificate-chain file://certificate-chain.pem
+```
   
 
   
