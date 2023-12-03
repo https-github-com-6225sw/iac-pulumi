@@ -32,4 +32,8 @@ config:
   csye6225-infra:bucketName: csye6225sw-demo-bucket
   csye6225-infra:dynamoDBName: CSYE6225Email-demo
   csye6225-infra:topicName: CSYE6225-demo
+  csye6225-infra:LaunchTempName: CSYE6225_lauch_temp
+  csye6225-infra:AutoScalingGroupName: CSYE6225_auto_scaling
+
+  csye6225-infra:SSLCertificateArn: arn:aws:iam::099917940770:server-certificate/certificate_object_name
   

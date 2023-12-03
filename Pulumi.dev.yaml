@@ -3,7 +3,7 @@ config:
   aws:region: us-east-1
   gcp:project: csye6225-dev-405720
 
-  csye6225-infra:amiId: ami-0501bc5c5e8dcf264
+  csye6225-infra:amiId: ami-096007b783184e0c8
   csye6225-infra:appSecurityGroup: dev-Pulumi-security
   csye6225-infra:awsAccountNumber: "603808807036"
   csye6225-infra:cloudWatchRoleName: cloudWatchAgentRole
@@ -32,4 +32,7 @@ config:
   csye6225-infra:vpcName: csye6225-dev-vpc
   csye6225-infra:bucketName: csye6225-sw
   csye6225-infra:dynamoDBName: CSYE6225Email-dev
+  csye6225-infra:AutoScalingGroupName: CSYE6225_auto_scaling
 
+  csye6225-infra:LaunchTempName: CSYE6225_lauch_temp
+  csye6225-infra:SSLCertificateArn: arn:aws:acm:us-east-1:603808807036:certificate/4021f7b2-1e02-4d25-a178-e9a284a66f00
