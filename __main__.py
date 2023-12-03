@@ -286,7 +286,6 @@ user_data_content = my_rds.endpoint.apply(lambda endpoint: base64.b64encode(crea
 #     lambda args: base64.b64encode(create_user_data(args[0], args[1], args[2]).encode('utf-8')).decode('utf-8')
 # )
 
-
 ### create iam role for cloudwatch
 cloudWatch_role = aws.iam.Role(
     resource_name= cloudWatchRoleName,
