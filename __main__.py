@@ -352,6 +352,7 @@ cw_profile = aws.iam.InstanceProfile("cwProfile", role= cloudWatch_role.name)
 launch_template = aws.ec2.LaunchTemplate('WebAppLaunchTemplate',
     opts=pulumi.ResourceOptions(depends_on=[my_rds]),
     image_id= amiId,
+    name=config.require("LaunchTempName"),
     instance_type='t2.micro',
     key_name= sshkeyName,
     network_interfaces=[{
@@ -361,7 +362,7 @@ launch_template = aws.ec2.LaunchTemplate('WebAppLaunchTemplate',
     user_data= user_data_content,
     iam_instance_profile={'name': cw_profile.name},
     tags={
-        'Name': 'instance template'
+        'Name': 'CSYE6625 template'
     }
 )
 
@@ -380,6 +381,7 @@ target_group = aws.lb.TargetGroup('appTargetGroup',
 
 # Auto Scaling Group
 auto_scaling_group = aws.autoscaling.Group('WebAppAutoScalingGroup',
+    name=config.require("AutoScalingGroupName"),
     min_size=1,
     max_size=3,
     desired_capacity=1,
@@ -461,13 +463,25 @@ app_ingress2 = aws.ec2.SecurityGroupRule("appIngressRule2",
 
 
 ### Create a Listener
-listener = aws.lb.Listener('httpListener',
+# listener = aws.lb.Listener('httpListener',
+#     load_balancer_arn=load_balancer.arn,
+#     port=80,
+#     default_actions=[aws.lb.ListenerDefaultActionArgs(
+#         type="forward",
+#         target_group_arn=target_group.arn,
+#     ),])
+
+listener = aws.lb.Listener("listener",
     load_balancer_arn=load_balancer.arn,
-    port=80,
-    default_actions=[aws.lb.ListenerDefaultActionArgs(
-        type="forward",
-        target_group_arn=target_group.arn,
-    )])
+    port=443,
+    protocol="HTTPS",
+    ssl_policy="ELBSecurityPolicy-2016-08",
+    certificate_arn=config.require("SSLCertificateArn"),
+    default_actions=[{
+        "type": "forward",
+        "target_group_arn": target_group.arn
+    }])
+
 
 route53_record = aws.route53.Record(
     # opts=pulumi.ResourceOptions(depends_on=[app_instance]),
