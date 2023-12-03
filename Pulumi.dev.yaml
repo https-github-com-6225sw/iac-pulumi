@@ -36,3 +36,4 @@ config:
 
   csye6225-infra:LaunchTempName: CSYE6225_lauch_temp
   csye6225-infra:SSLCertificateArn: arn:aws:acm:us-east-1:603808807036:certificate/4021f7b2-1e02-4d25-a178-e9a284a66f00
+
